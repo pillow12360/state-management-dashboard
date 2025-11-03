@@ -4,12 +4,15 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   Stack,
   Typography,
 } from '@mui/material'
 
 function App() {
   const [count, setCount] = useState(0)
+  const mocksEnabled =
+    String(import.meta.env.VITE_ENABLE_MSW ?? '').toLowerCase() === 'true'
 
   return (
     <Box
@@ -26,7 +29,7 @@ function App() {
       }}
     >
       <Stack spacing={4} maxWidth={520} width="100%">
-        <Stack spacing={1} textAlign="center">
+        <Stack spacing={1} textAlign="center" alignItems="center">
           <Typography variant="h3" fontWeight={700}>
             State Management Dashboard
           </Typography>
@@ -35,6 +38,13 @@ function App() {
             management strategies. Start by wiring up your data layer and
             visualization widgets.
           </Typography>
+          <Chip
+            data-testid="msw-status"
+            label={`MSW: ${mocksEnabled ? 'Enabled' : 'Disabled'}`}
+            color={mocksEnabled ? 'success' : 'default'}
+            variant={mocksEnabled ? 'filled' : 'outlined'}
+            size="small"
+          />
         </Stack>
 
         <Card elevation={6}>
@@ -49,6 +59,7 @@ function App() {
                 <Button
                   fullWidth
                   variant="contained"
+                  data-testid="increment-button"
                   onClick={() => setCount((value) => value + 1)}
                 >
                   Increment ({count})
