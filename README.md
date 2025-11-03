@@ -146,21 +146,21 @@ D10	README + 블로그형 결과 정리	포트폴리오 제출용 정리
 
 
 # 1. 패키지 설치
-'''bash
+```bash
 npm install
-'''
+```
 # 2. MSW 서버 실행
-'''bash
+```bash
 npm run dev
-'''
+```
 # 3. Mock API 활성화
-'''bash
+```bash
 npx msw init public/ --save
-'''
+```
 # 4. 개발 서버 시작
-'''bash
+```bash
 npm run dev
-'''
+```
 
 ---
 🪪 License
