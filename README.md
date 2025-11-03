@@ -40,25 +40,33 @@ React Profiler와 커스텀 로깅 훅을 이용해 각 엔진별 렌더링 횟�
 ## 🧱 프로젝트 구조
 
 ```bash
-src/
- ├─ features/
- │   ├─ feed/
- │   │   ├─ components/   # 피드 카드, 버튼 등 UI
- │   │   ├─ hooks/        # usePerformanceLog, useFeed 등
- │   │   └─ services/     # API 통신 (TanStack Query)
- │   ├─ dashboard/        # 성능 비교 그래프 시각화
- │   └─ state/            # 상태관리 엔진별 구현체
- │       ├─ context/
- │       ├─ zustand/
- │       └─ redux/
- ├─ mocks/
- │   ├─ handlers.ts       # MSW API Mock 핸들러
- │   └─ browser.ts        # 서비스워커 초기화
- ├─ hooks/
- │   └─ usePerformanceLog.ts
- ├─ pages/
- │   └─ Home.tsx
- └─ main.tsx
+.
+├─ index.html                 # 부모 대시보드 엔트리
+├─ frame.html                 # iframe 엔트리 (쿼리 파라미터로 엔진 구분)
+├─ public/
+│  └─ mockServiceWorker.js    # MSW 서비스워커
+├─ src/
+│  ├─ main.dashboard.tsx      # React 루트 (대시보드)
+│  ├─ main.frame.tsx          # React 루트 (iframe)
+│  ├─ dashboard/
+│  │  └─ DashboardApp.tsx     # iframe 3개를 배치한 부모 컴포넌트
+│  ├─ frame/
+│  │  ├─ FrameApp.tsx         # 엔진 로딩 & 공용 UI 컴포넌트
+│  │  └─ engine/              # 엔진별 Provider 스텁
+│  │     ├─ loadEngineProvider.ts
+│  │     ├─ context/Provider.tsx
+│  │     ├─ redux/Provider.tsx
+│  │     └─ zustand/Provider.tsx
+│  ├─ features/
+│  │  └─ feed/
+│  │     ├─ components/FeedPage.tsx
+│  │     └─ services/feed.api.ts
+│  ├─ mocks/
+│  │  ├─ browser.ts
+│  │  └─ handlers.ts
+│  ├─ lib/bootstrap.ts        # React + MSW 부트스트랩 유틸
+│  ├─ theme.ts
+│  └─ types.ts
 ```
 
 ---
