@@ -9,59 +9,17 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
-import { useCallback, useEffect, useState } from 'react'
-import type { FeedPost } from '../../../types'
-import { fetchFeedPosts, toggleLike } from '../services/feed.api'
+import { useFeedQuery } from '../hooks/useFeedQuery'
 
 /**
  * @component FeedPage
  * @description
- * 세 엔진이 공통으로 사용할 피드 UI.
- * 아직 상태관리 엔진과 연결되기 전 초기 구조를 시각적으로 확인하기 위한 간단한 구현이다.
+ * React Query 기반 데이터 흐름을 이용해 피드 목록을 표출하고 좋아요를 토글한다.
+ * - 세 엔진(Context/Zustand/Redux)이 동일한 UI와 데이터 소스를 공유하도록 설계되었다.
+ * - Provider 계층에서 TanStack Query 캐시를 공급받아 엔진별 비교가 가능하다.
  */
 export function FeedPage() {
-  const [posts, setPosts] = useState<FeedPost[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let mounted = true
-
-    fetchFeedPosts()
-      .then((data) => {
-        if (mounted) {
-          setPosts(data)
-        }
-      })
-      .catch((err) => {
-        if (mounted) {
-          setError(err instanceof Error ? err.message : String(err))
-        }
-      })
-      .finally(() => {
-        if (mounted) {
-          setIsLoading(false)
-        }
-      })
-
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  const handleToggleLike = useCallback(
-    async (postId: number) => {
-      try {
-        const updatedPost = await toggleLike(postId)
-        setPosts((prev) =>
-          prev.map((post) => (post.id === postId ? updatedPost : post)),
-        )
-      } catch (err) {
-        console.error(err)
-      }
-    },
-    [],
-  )
+  const { posts, isLoading, error, likePost } = useFeedQuery()
 
   if (isLoading) {
     return (
@@ -92,7 +50,7 @@ export function FeedPage() {
                   variant={post.liked ? 'contained' : 'outlined'}
                   color="secondary"
                   startIcon={post.liked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                  onClick={() => handleToggleLike(post.id)}
+                  onClick={() => likePost(post.id)}
                 >
                   좋아요 {post.likes}
                 </Button>
