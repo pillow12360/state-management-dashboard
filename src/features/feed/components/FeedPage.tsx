@@ -9,17 +9,16 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
-import { useFeedQuery } from '../hooks/useFeedQuery'
+import { useFrameEngine } from '../../../frame/engine/useFrameEngine'
 
 /**
  * @component FeedPage
  * @description
- * React Query 기반 데이터 흐름을 이용해 피드 목록을 표출하고 좋아요를 토글한다.
- * - 세 엔진(Context/Zustand/Redux)이 동일한 UI와 데이터 소스를 공유하도록 설계되었다.
- * - Provider 계층에서 TanStack Query 캐시를 공급받아 엔진별 비교가 가능하다.
+ * 엔진 Provider가 주입한 공통 계약(`useFrameEngine`)을 통해 피드 목록과 상호작용을 수행한다.
+ * - 세 엔진(Context/Zustand/Redux)이 동일한 UI와 데이터 소스를 공유하되, UI는 엔진 구현에 대해 불가지론적으로 유지된다.
  */
 export function FeedPage() {
-  const { posts, isLoading, error, likePost } = useFeedQuery()
+  const { posts, isLoading, error, likePost } = useFrameEngine()
 
   if (isLoading) {
     return (

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchFeedPosts, toggleLike } from '../services/feed.api'
+import type { FeedEngineState } from '../../../frame/engine/types'
 import type { FeedPost } from '../../../types'
 
 /**
@@ -10,15 +11,10 @@ import type { FeedPost } from '../../../types'
 export const FEED_QUERY_KEY = ['feed', 'posts'] as const
 
 /**
- * @interface UseFeedQueryResult
- * @description FeedPage 컴포넌트에서 필요한 데이터와 액션을 모은 인터페이스.
+ * @typedef UseFeedQueryResult
+ * @description Feed 엔트리에서 필요로 하는 공통 엔진 계약과 동일한 타입.
  */
-export interface UseFeedQueryResult {
-  posts: FeedPost[]
-  isLoading: boolean
-  error: string | null
-  likePost: (postId: number) => Promise<void>
-}
+export type UseFeedQueryResult = FeedEngineState
 
 /**
  * @hook useFeedQuery
@@ -28,7 +24,7 @@ export interface UseFeedQueryResult {
  * - mutation 실패 시 캐시를 롤백해 데이터 일관성을 유지한다.
  * @returns UseFeedQueryResult 피드 데이터와 인터랙션 핸들러 묶음.
  */
-export function useFeedQuery(): UseFeedQueryResult {
+export function useFeedQuery(): FeedEngineState {
   const queryClient = useQueryClient()
 
   const {

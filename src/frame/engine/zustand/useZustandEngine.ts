@@ -1,19 +1,14 @@
 import { createContext, useContext } from 'react'
 import { useStore } from 'zustand'
 import type { StoreApi } from 'zustand'
-import type { FeedPost } from '../../../types'
+import type { FeedEngineState } from '../types'
 
 /**
- * @interface ZustandEngineState
+ * @type ZustandEngineState
  * @description
- * Zustand 엔진이 전역으로 관리해야 하는 상태와 액션의 형태를 정의한다.
+ * Feed 엔진 공통 계약을 그대로 따르는 Zustand 상태 형태.
  */
-export interface ZustandEngineState {
-  posts: FeedPost[]
-  isLoading: boolean
-  error: string | null
-  likePost: (postId: number) => Promise<void>
-}
+export type ZustandEngineState = FeedEngineState
 
 /**
  * @type ZustandEngineStore

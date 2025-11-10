@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from 'react'
 import { useFeedQuery } from '../../../features/feed/hooks/useFeedQuery'
+import { FrameEngineContext } from '../useFrameEngine'
 import { ContextEngineContext } from './useContextEngine'
 
 /**
@@ -12,5 +13,9 @@ import { ContextEngineContext } from './useContextEngine'
 export function ContextEngineProvider({ children }: PropsWithChildren) {
   const feed = useFeedQuery()
 
-  return <ContextEngineContext.Provider value={feed}>{children}</ContextEngineContext.Provider>
+  return (
+    <ContextEngineContext.Provider value={feed}>
+      <FrameEngineContext.Provider value={feed}>{children}</FrameEngineContext.Provider>
+    </ContextEngineContext.Provider>
+  )
 }

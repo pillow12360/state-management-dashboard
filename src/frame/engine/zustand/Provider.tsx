@@ -2,8 +2,13 @@ import type { PropsWithChildren } from 'react'
 import { useEffect, useRef } from 'react'
 import { createStore } from 'zustand'
 import { useFeedQuery } from '../../../features/feed/hooks/useFeedQuery'
-import type { ZustandEngineState, ZustandEngineStore } from './useZustandEngine'
-import { ZustandEngineContext } from './useZustandEngine'
+import { FrameEngineContext } from '../useFrameEngine'
+import {
+  ZustandEngineContext,
+  useZustandEngine,
+  type ZustandEngineState,
+  type ZustandEngineStore,
+} from './useZustandEngine'
 
 /**
  * @function createZustandEngineStore
@@ -40,7 +45,13 @@ export function ZustandEngineProvider({ children }: PropsWithChildren) {
 
   return (
     <ZustandEngineContext.Provider value={storeRef.current}>
-      {children}
+      <ZustandFrameEngineBoundary>{children}</ZustandFrameEngineBoundary>
     </ZustandEngineContext.Provider>
   )
+}
+
+function ZustandFrameEngineBoundary({ children }: PropsWithChildren) {
+  const state = useZustandEngine()
+
+  return <FrameEngineContext.Provider value={state}>{children}</FrameEngineContext.Provider>
 }
