@@ -1,191 +1,146 @@
-# 🧠 React State Management Dashboard
+# React State Management Dashboard
 
-> **React 상태관리 라이브러리(Context API, Zustand, Redux Toolkit)의 데이터 흐름 및 성능 비교 프로젝트**
+iframe 안에서 **Context / Zustand / Redux Toolkit** 세 가지 전역 상태 엔진을 동일한 UI로 실행하고,  
+부모 대시보드가 각 엔진의 초기 렌더 성능을 수집·시각화하는 실험용 프로젝트입니다.
 
----
-
-## 🚀 프로젝트 개요
-
-이 프로젝트는 동일한 UI 구조를 기반으로 **서로 다른 상태관리 라이브러리의 동작 특성과 성능 차이**를 시각화하여 비교하기 위한 실험형 대시보드입니다.
-
-React Profiler와 커스텀 로깅 훅을 이용해 각 엔진별 렌더링 횟수, 반응 속도, 코드 복잡도를 수집하고  
-이를 Recharts 기반의 그래프로 시각화합니다.
+> LCP(Largest Contentful Paint)는 최상위 문맥에서만 노출되기 때문에([web.dev/vitals](https://web.dev/vitals/))  
+> iframe 내부에서는 근사치를 따로 측정해야 합니다. 본 프로젝트는 `docs/initial-render-metrics.md`에 정리된 방식대로  
+> 각 iframe이 “초기 렌더링 시간”을 계산해 부모 창으로 전달하도록 구성되어 있습니다.
 
 ---
 
-## 🎯 목표
+## 핵심 기능
 
-> "상태관리 선택은 단순한 라이브러리 취향이 아니라, 아키텍처 설계의 문제다."
-
-- Context, Zustand, Redux Toolkit의 구조적 차이를 직접 비교
-- Optimistic UI, 전역 상태 관리, 데이터 캐싱 등의 성능 및 코드 복잡도 분석
-- 결과를 대시보드 형태로 시각화하여 한눈에 파악
-
----
-
-## ⚙️ 기술 스택
-
-| 구분                   | 기술                                  | 선택 이유                                |
-| ---------------------- | ------------------------------------- | ---------------------------------------- |
-| **Frontend Framework** | React 19 (Vite)                       | 최신 React 기능 실험용                   |
-| **Mock Server**        | MSW (Mock Service Worker)             | 실제 네트워크 요청처럼 작동하는 Mock API |
-| **Data Fetching**      | TanStack Query                        | 캐싱, 리트라이, Optimistic UI 제어       |
-| **State Management**   | Context API / Zustand / Redux Toolkit | 상태관리 비교 목적                       |
-| **Styling**            | Tailwind CSS                          | 빠른 UI 프로토타이핑 및 반응형 구현      |
-| **Chart Library**      | Recharts                              | 성능 데이터 시각화                       |
-| **Performance Tools**  | React Profiler, Performance API       | 렌더링 및 UX 지표 수집                   |
+- **Feed 데이터 공통화**: TanStack Query + MSW(Mock Service Worker)로 `/api/posts`를 호출하고 Optimistic Update를 적용합니다.
+- **세 엔진 비교**: Context, Zustand, Redux Toolkit Provider가 `FeedEngineState` 계약을 구현하여 같은 UI를 재사용합니다.
+- **엔진 불가지론 UI**: `useFrameEngine` 훅 하나로 FeedPage가 동작하므로 엔진 교체 시에도 UI 코드는 변경되지 않습니다.
+- **초기 렌더 성능 측정**: 각 iframe이 첫 페인트 이후 2프레임을 기다려 `metric:initial-render` 메시지를 부모에 전송합니다.
+- **대시보드 출력**: 상단 Metric 카드에서 엔진별 초기 렌더 시간을 초 단위로 비교할 수 있습니다.
+- **문서 레시피 제공**:
+  - `docs/frame-engine-recipe.md`: 새 상태관리 엔진을 추가할 때 따라야 할 Provider 패턴
+  - `docs/initial-render-metrics.md`: LCP 제약을 우회한 초기 렌더 지표 수집 파이프라인
+  - `docs/ai-agent-recipe.md`: Codex/AI 작업 흐름 가이드
 
 ---
 
-## 🧱 프로젝트 구조
+## 기술 스택
+
+| 구분          | 사용 기술                             | 비고                       |
+| ------------- | ------------------------------------- | -------------------------- |
+| UI 프레임워크 | React 19 + Vite                       | Concurrent 기능 실험 환경  |
+| 상태관리      | Context API / Zustand / Redux Toolkit | 엔진 간 비교 대상          |
+| 데이터 패칭   | @tanstack/react-query                 | 캐싱 + Optimistic Update   |
+| 스타일        | Material UI (MUI)                     | 대시보드 · 카드 UI         |
+| Mock API      | MSW (Service Worker)                  | 로컬에서 실제 API처럼 동작 |
+| 언어/도구     | TypeScript, ESLint                    | 개발 편의                  |
+
+---
+
+## 폴더 구조 하이라이트
 
 ```bash
 .
-├─ index.html                 # 부모 대시보드 엔트리
-├─ frame.html                 # iframe 엔트리 (쿼리 파라미터로 엔진 구분)
-├─ public/
-│  └─ mockServiceWorker.js    # MSW 서비스워커
-├─ src/
-│  ├─ main.dashboard.tsx      # React 루트 (대시보드)
-│  ├─ main.frame.tsx          # React 루트 (iframe)
-│  ├─ dashboard/
-│  │  └─ DashboardApp.tsx     # iframe 3개를 배치한 부모 컴포넌트
-│  ├─ frame/
-│  │  ├─ FrameApp.tsx         # 엔진 로딩 & 공용 UI 컴포넌트
-│  │  └─ engine/              # 엔진별 Provider 스텁
-│  │     ├─ loadEngineProvider.ts
-│  │     ├─ context/Provider.tsx
-│  │     ├─ redux/Provider.tsx
-│  │     └─ zustand/Provider.tsx
-│  ├─ features/
-│  │  └─ feed/
-│  │     ├─ components/FeedPage.tsx
-│  │     └─ services/feed.api.ts
-│  ├─ mocks/
-│  │  ├─ browser.ts
-│  │  └─ handlers.ts
-│  ├─ lib/bootstrap.ts        # React + MSW 부트스트랩 유틸
-│  ├─ theme.ts
-│  └─ types.ts
+├── public/
+│   └── mockServiceWorker.js     # MSW가 생성하는 서비스워커 스크립트
+├── src/
+│   ├── main.dashboard.tsx       # 부모 대시보드 엔트리
+│   ├── main.frame.tsx           # iframe 엔트리 (엔진별 초기 렌더 측정 포함)
+│   ├── dashboard/DashboardApp.tsx
+│   ├── frame/
+│   │   ├── FrameApp.tsx
+│   │   └── engine/
+│   │       ├── types.ts         # FeedEngineState 계약
+│   │       ├── useFrameEngine.ts
+│   │       ├── context|zustand|redux/Provider.tsx
+│   │       └── loadEngineProvider.ts
+│   ├── features/feed/
+│   │   ├── components/FeedPage.tsx
+│   │   ├── hooks/useFeedQuery.ts
+│   │   └── services/feed.api.ts
+│   ├── mocks/
+│   │   ├── handlers.ts          # /api/posts, /api/posts/:id/like 정의
+│   │   └── browser.ts
+│   ├── lib/bootstrap.ts         # MSW 초기화 + React 부트스트랩
+│   ├── theme.ts
+│   └── types.ts
+└── docs/
+    ├── frame-engine-recipe.md
+    ├── initial-render-metrics.md
+    └── ai-agent-recipe.md
 ```
 
 ---
 
-## 🔍 주요 기능
+## MSW Mock API
 
-### 기능 설명
+MSW(Service Worker)가 `/api/*` 요청을 가로채 아래와 같이 응답합니다 (`src/mocks/handlers.ts`).
 
-- 📰 피드 목록 표시 /api/posts Mock API에서 데이터 Fetch
-- ❤️ 좋아요(Optimistic UI) 서버 응답 전에 즉시 상태 반영 후 롤백 테스트
-- 🔄 상태관리 엔진 전환 Zustand / Context / Redux 간 실시간 전환
-- 📊 성능 로그 시각화 렌더링 횟수, 인터랙션 지연(ms), 코드 라인수 비교
+| Method | Endpoint              | 설명                                 |
+| ------ | --------------------- | ------------------------------------ |
+| GET    | `/api/health`         | 헬스 체크                            |
+| GET    | `/api/posts`          | 피드 목록 조회                       |
+| PATCH  | `/api/posts/:id/like` | 좋아요 토글 (400ms 인위적 지연 포함) |
 
----
+예시 응답:
 
-## 🌐 API 명세 (MSW 기반)
-
-Method Endpoint 설명
-GET /api/posts 피드 목록 조회
-PATCH /api/posts/:id/like 좋아요 상태 토글 (800ms 지연 포함)
-
-예시 응답
-
-```
+```json
 [
-  { "id": 1, "title": "React Query is powerful", "likes": 10 },
-  { "id": 2, "title": "Zustand is minimal", "likes": 5 }
+  { "id": 1, "title": "Context API 기반 피드", "likes": 12, "liked": false },
+  { "id": 2, "title": "Zustand는 가볍고 빠르다", "likes": 28, "liked": true },
+  { "id": 3, "title": "Redux Toolkit 활용 패턴", "likes": 19, "liked": false }
 ]
 ```
 
----
-
-## ⚖️ 비교 지표
-
-### 항목 측정 방법
-
-1. 렌더링 횟수 React Profiler API
-2. 사용자 인터랙션 지연 performance.now() 기반 Custom Hook
-3. 코드 복잡도 LOC(Line of Code) 계산
-4. API 응답 속도 TanStack Query onSuccess 타이밍 측정
-5. 상태 일관성 optimistic update → rollback 동작 비교
+> 개발 서버에서 Mock API를 사용하려면 `.env` 또는 실행 환경에 `VITE_ENABLE_MSW=true` 를 설정하세요.  
+> 최초 한 번은 `npx msw init public/ --save` 로 서비스워커 스크립트를 생성해야 합니다.
 
 ---
 
-## 📈 대시보드 구성
+## 초기 렌더 성능 지표
 
-그래프 설명
-📊 Render Count Chart 각 상태관리 엔진별 총 렌더링 횟수
-⚡ Interaction Delay Chart 클릭 → UI 반영까지의 평균 지연시간
-🧩 Code Complexity Chart 기능별 코드 라인 수 및 store 구조 비교
-🔁 Success Rate Chart 낙관적 업데이트 성공률 및 실패 롤백 비율
+1. **측정 방법** (`src/main.frame.tsx`)
 
----
+   - iframe이 마운트된 뒤 `requestAnimationFrame`을 두 번 대기해 첫 페인트 이후 프레임을 포착합니다.
+   - `performance.getEntriesByType('navigation')[0]` 기준 시간과의 차이를 `duration`(ms)로 계산합니다.
+   - `{ type: 'metric:initial-render', payload: { engineId, duration, timestamp } }` 메시지를 부모 창으로 전송합니다.
 
-## 🧩 마일스톤 (Sprint 1 - 10 Days)
+2. **출력 방법** (`src/dashboard/DashboardApp.tsx`)
+   - 부모 대시보드는 동일 오리진 메시지만 수신하고 스키마를 검증합니다.
+   - 엔진별 최신 타임스탬프 기록만 유지하여 상단 카드에 초 단위로 표시합니다.
 
-```
-Day	주요 목표	산출물
-D1~2	기본 피드 UI + TanStack Query 셋업	공통 UI 완성
-D3~4	Context + Zustand 버전 구현	상태관리 구조 완성
-D5~6	Redux Toolkit 버전 + 전환 기능 추가	3버전 전환 가능
-D7	Profiler + 성능 로깅 Hook 구현	로그 JSON 출력
-D8~9	대시보드 그래프 구현	시각화 페이지 완성
-D10	README + 블로그형 결과 정리	포트폴리오 제출용 정리
-```
+> 자세한 설계 근거는 `docs/initial-render-metrics.md`에서 확인할 수 있습니다.
 
 ---
 
-## 🧠 프로젝트 설계 의도
-
-    1. 실무형 비교 실험
-    •	단순한 라이브러리 비교가 아닌, 실제 서비스 수준의 데이터 흐름 실험.
-    2. 시각화 중심 설계
-    •	결과를 직관적으로 전달할 수 있도록 대시보드 형태로 구성.
-    3. 확장성 고려
-    •	향후 MobX, Recoil, custom hook 기반 상태관리 추가 예정.
-
----
-
-## 🚀 향후 확장 계획
-
-- Zustand Devtools / Redux Logger 연동
-- React 19의 useOptimistic, useTransition 비교 추가
-- Lighthouse 기반 Web Vitals 측정 (LCP/CLS/INP)
-- GitHub Actions 기반 자동 벤치마크 실행
-
----
-
-📘 실행 방법
-
-# 1. 패키지 설치
+## 실행 방법
 
 ```bash
-npm install
+pnpm install | npm install    # 의존성 설치
+
+VITE_ENABLE_MSW=true npm run dev
 ```
 
-# 2. MSW 서버 실행
+브라우저에서 `http://localhost:5173`으로 접속하면,
+
+- 상단 카드에서 각 엔진의 초기 렌더 시간을 확인하고
+- 하단의 세 iframe(Context/Zustand/Redux)이 동일한 Feed UI를 렌더링하는 모습을 비교할 수 있습니다.
+
+프로덕션 번들 확인:
 
 ```bash
-npm run dev
-```
-
-# 3. Mock API 활성화
-
-```bash
-npx msw init public/ --save
-```
-
-# 4. 개발 서버 시작
-
-```bash
-npm run dev
+npm run build && npm run preview
 ```
 
 ---
 
-🪪 License
+## 추가 참고 문서
 
-MIT License
-Copyright (c) 2025 Han Dongchan
+- [`docs/frame-engine-recipe.md`](docs/frame-engine-recipe.md): 새 상태관리 엔진 Provider를 붙이는 단계별 레시피
+- [`docs/initial-render-metrics.md`](docs/initial-render-metrics.md): LCP 제약을 우회한 초기 렌더 지표 수집 방식
+- [`docs/ai-agent-recipe.md`](docs/ai-agent-recipe.md): Codex/AI 에이전트 작업 흐름 가이드
 
 ---
+
+## 라이선스
+
+MIT © 2025 Han Dongchan
