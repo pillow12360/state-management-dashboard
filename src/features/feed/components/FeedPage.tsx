@@ -10,6 +10,9 @@ import {
   Typography,
 } from '@mui/material'
 import { useFrameEngine } from '../../../frame/engine/useFrameEngine'
+import { HeavyComponent } from './HeavyComponent'
+import { useEffect } from 'react'
+import { reportDataRender } from '../../../main.frame'
 
 /**
  * @component FeedPage
@@ -19,6 +22,12 @@ import { useFrameEngine } from '../../../frame/engine/useFrameEngine'
  */
 export function FeedPage() {
   const { posts, isLoading, error, likePost } = useFrameEngine()
+
+  useEffect(() => {
+    if (!isLoading && posts.length > 0) {
+      reportDataRender()
+    }
+  }, [isLoading, posts])
 
   if (isLoading) {
     return (
@@ -57,6 +66,7 @@ export function FeedPage() {
                   ID: {post.id}
                 </Typography>
               </Stack>
+              <HeavyComponent />
             </Stack>
           </CardContent>
         </Card>

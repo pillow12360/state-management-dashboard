@@ -1,4 +1,4 @@
-import { Box, Container, Stack, Typography } from '@mui/material';
+import { Box, Container, Stack, Typography, Slider, FormControl, FormLabel, Button } from '@mui/material';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { EngineId } from '../types';
 
@@ -15,14 +15,30 @@ type InitialRenderMetricMessage = {
   payload: InitialRenderMetricPayload;
 };
 
+type DataRenderMetricPayload = {
+  engineId: EngineId;
+  duration: number;
+  timestamp: number;
+};
+
+type DataRenderMetricMessage = {
+  type: 'metric:data-render';
+  payload: DataRenderMetricPayload;
+};
+
 /**
  * @component DashboardApp
  * @description
  * 메인 대시보드에서 세 가지 상태관리 엔진을 각각 iframe으로 로드한다.
  */
 function DashboardAppComponent() {
+  const [sliderValue, setSliderValue] = useState<number>(10);
+  const [appliedItemCount, setAppliedItemCount] = useState<number>(10);
   const [initialRenderMetrics, setInitialRenderMetrics] = useState<
     Partial<Record<EngineId, InitialRenderMetricPayload>>
+  >({});
+  const [dataRenderMetrics, setDataRenderMetrics] = useState<
+    Partial<Record<EngineId, DataRenderMetricPayload>>
   >({});
 
   useEffect(() => {
@@ -31,9 +47,9 @@ function DashboardAppComponent() {
         return;
       }
 
-      const data = event.data as InitialRenderMetricMessage;
+      const data = event.data as InitialRenderMetricMessage | DataRenderMetricMessage;
 
-      if (!data || data.type !== 'metric:initial-render' || !data.payload) {
+      if (!data || !data.payload) {
         return;
       }
 
@@ -46,30 +62,56 @@ function DashboardAppComponent() {
         return;
       }
 
-      setInitialRenderMetrics((prev) => {
-        const current = prev[payload.engineId];
-        if (current && current.timestamp >= payload.timestamp) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [payload.engineId]: payload,
-        };
-      });
+      if (data.type === 'metric:initial-render') {
+        setInitialRenderMetrics((prev) => {
+          const current = prev[payload.engineId];
+          if (current && current.timestamp >= payload.timestamp) {
+            return prev;
+          }
+          return {
+            ...prev,
+            [payload.engineId]: payload,
+          };
+        });
+      } else if (data.type === 'metric:data-render') {
+        setDataRenderMetrics((prev) => {
+          const current = prev[payload.engineId];
+          if (current && current.timestamp >= payload.timestamp) {
+            return prev;
+          }
+          return {
+            ...prev,
+            [payload.engineId]: payload,
+          };
+        });
+      }
     }
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  const handleApply = () => {
+    setAppliedItemCount(sliderValue);
+    setInitialRenderMetrics({});
+    setDataRenderMetrics({});
+  };
+
   const metricCards = useMemo(
     () =>
       engines.map((engine) => {
-        const metric = initialRenderMetrics[engine];
-        const valueLabel =
-          typeof metric?.duration === 'number'
-            ? `${(metric.duration / 1000).toFixed(2)}s`
-            : '측정 중';
+        const initialMetric = initialRenderMetrics[engine];
+        const dataMetric = dataRenderMetrics[engine];
+        
+        const initialLabel =
+          typeof initialMetric?.duration === 'number'
+            ? `${(initialMetric.duration / 1000).toFixed(2)}s`
+            : '-';
+            
+        const dataLabel =
+          typeof dataMetric?.duration === 'number'
+            ? `${(dataMetric.duration / 1000).toFixed(2)}s`
+            : '-';
 
         return (
           <Box
@@ -84,15 +126,30 @@ function DashboardAppComponent() {
             }}
           >
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              {engine.toUpperCase()} INITIAL RENDER
+              {engine.toUpperCase()}
             </Typography>
-            <Typography variant="h5" fontWeight={700}>
-              {valueLabel}
-            </Typography>
+            <Stack direction="row" spacing={4}>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  INITIAL (Shell)
+                </Typography>
+                <Typography variant="h5" fontWeight={700}>
+                  {initialLabel}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  DATA (Content)
+                </Typography>
+                <Typography variant="h5" fontWeight={700} color="primary.main">
+                  {dataLabel}
+                </Typography>
+              </Box>
+            </Stack>
           </Box>
         );
       }),
-    [initialRenderMetrics],
+    [initialRenderMetrics, dataRenderMetrics],
   );
 
   return (
@@ -114,6 +171,30 @@ function DashboardAppComponent() {
               로드하여 렌더링 동작과 사용자 경험을 비교할 수 있습니다.
             </Typography>
           </Stack>
+
+          <Box sx={{ px: 3, py: 2, bgcolor: 'background.paper', borderRadius: 2, border: 1, borderColor: 'divider' }}>
+            <Stack direction="row" spacing={4} alignItems="center">
+              <FormControl fullWidth>
+                <FormLabel>렌더링 아이템 개수: {sliderValue}</FormLabel>
+                <Slider
+                  value={sliderValue}
+                  onChange={(_, value) => setSliderValue(value as number)}
+                  min={10}
+                  max={3000}
+                  step={10}
+                  valueLabelDisplay="auto"
+                />
+              </FormControl>
+              <Button 
+                variant="contained" 
+                onClick={handleApply}
+                disabled={sliderValue === appliedItemCount}
+                sx={{ minWidth: 100, height: 40 }}
+              >
+                적용하기
+              </Button>
+            </Stack>
+          </Box>
 
           <Stack spacing={2} direction={{ xs: 'column', md: 'row' }}>
             {metricCards}
@@ -147,7 +228,7 @@ function DashboardAppComponent() {
                 </Box>
                 <Box
                   component="iframe"
-                  src={`/frame.html?engine=${engine}`}
+                  src={`/frame.html?engine=${engine}&count=${appliedItemCount}`}
                   title={`${engine} frame`}
                   sx={{
                     width: '100%',

@@ -17,6 +17,17 @@ type InitialRenderMetricMessage = {
   payload: InitialRenderMetricPayload
 }
 
+type DataRenderMetricPayload = {
+  engineId: EngineId
+  duration: number
+  timestamp: number
+}
+
+type DataRenderMetricMessage = {
+  type: 'metric:data-render'
+  payload: DataRenderMetricPayload
+}
+
 function resolveEngineId(): EngineId {
   const params = new URLSearchParams(window.location.search)
   const value = params.get('engine') as EngineId | null
@@ -55,6 +66,39 @@ function reportInitialRender() {
 
       window.parent?.postMessage(message, window.location.origin)
     })
+  })
+}
+
+/**
+ * @function reportDataRender
+ * @description
+ * 데이터 렌더링이 완료된 시점에 호출하여 부모 창에 메트릭을 전송한다.
+ */
+export function reportDataRender() {
+  if (!window.parent || window.parent === window) {
+    return
+  }
+
+  // requestAnimationFrame을 사용하여 페인팅이 완료된 시점을 근사
+  requestAnimationFrame(() => {
+    const navigationEntry = performance
+      .getEntriesByType('navigation')
+      .at(0) as PerformanceNavigationTiming | undefined
+
+    const duration = navigationEntry
+      ? performance.now() - navigationEntry.startTime
+      : performance.now()
+
+    const message: DataRenderMetricMessage = {
+      type: 'metric:data-render',
+      payload: {
+        engineId: resolveEngineId(),
+        duration,
+        timestamp: Date.now(),
+      },
+    }
+
+    window.parent?.postMessage(message, window.location.origin)
   })
 }
 

@@ -7,7 +7,11 @@ const API_BASE_URL = '/api'
  * @description 피드 목록 데이터를 요청한다.
  */
 export async function fetchFeedPosts(): Promise<FeedPost[]> {
-  const response = await fetch(`${API_BASE_URL}/posts`)
+  const params = new URLSearchParams(window.location.search)
+  const count = params.get('count')
+  
+  const query = count ? `?count=${count}` : ''
+  const response = await fetch(`${API_BASE_URL}/posts${query}`)
 
   if (!response.ok) {
     throw new Error('Failed to load posts')
